@@ -10,7 +10,7 @@ xxx.xx.xxx.xx1	frontend001
 xxx.xx.xxx.xx2	med32compute001
 xxx.xx.xxx.xx3	med32compute002
 ```
-## Setyp SSH
+## 1) Setyp SSH
 Run the following command on all nodes:
 ```
 sudo apt install openssh-server openssh-client
@@ -19,7 +19,7 @@ Test if it works by running the following command:
 ```
 ssh med32compute001 #If you are in the frontend001 node
 ```
-# Install and setup Munge
+# 2) Install and setup Munge
 Install munge in **all nodes** running the following commands:
 ```
 sudo apt install munge libmunge2 libmunge-dev
@@ -64,7 +64,7 @@ sudo systemctl restart munge
 # Test munge
 munge -n | ssh frontend001 unmunge 
 ```
-# Install and setup Slurm
+# 3) Install and setup Slurm
 On **all nodes (controller and workers)** run the following command:
 ```
 sudo apt install slurm-wlm
@@ -221,3 +221,27 @@ sudo systemctl enable slurmd
 sudo systemctl restart slurmd
 sudo systemctl status slurmd
 ```
+# 4) Configure shared storage
+To create a shared file system (i.e. so thatt all nodes have the same folders) first we need to setup NFS. In the **controller node** install/update NFS:
+```
+sudo apt install nfs-kernel-server
+```
+Modidy the */etc/exports* file:
+```
+sudo nano /etc/exports
+
+# Add the following line
+/home 172.23.208.0/24(rw,sync,no_root_squash) #Modify this accordingly by creating a subnet of all IPs of the worker nodes
+
+# Apply cahnges
+sudo exportfs -ra
+sudo systemctl restart nfs-kernel-server
+```
+On all **worker nodes** run the following commands:
+```
+# Install NFS
+sudo apt install nfs-common
+# Mount the frontend into the node
+sudo mount primrose-frontend001:/home /home
+```
+
