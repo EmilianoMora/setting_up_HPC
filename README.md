@@ -68,7 +68,15 @@ munge -n | ssh frontend001 unmunge
 On **all nodes (controller and workers)** run the following command:
 ```
 sudo apt install slurm-wlm
-
+```
+In the **controller node**:
+```
+sudo systemctl enable slurmctld
+sudo systemctl restart slurmctld
+sudo systemctl status slurmctld
+```
+In all **worker nodes**:
+```
 sudo systemctl enable slurmd
 sudo systemctl restart slurmd
 sudo systemctl status slurmd
