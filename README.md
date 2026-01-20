@@ -35,9 +35,9 @@ sudo chown -R munge: /etc/munge/munge.key
 ```
 Then restart the munge service and configure it to run at startup. And test
 ```
-systemctl enable munge
-systemctl restart munge
-systemctl status munge
+sudo systemctl enable munge
+sudo systemctl restart munge
+sudo systemctl status munge
 ```
 It is necessary to have the exact same */etc/munge/munge.key* from the controller node in all the worker nodes. One way of doing it is to transfer the file from the *controller node* into each working node using rsync:
 ```
@@ -67,6 +67,7 @@ munge -n | ssh frontend001 unmunge
 # 3) Install and setup Slurm
 On **all nodes (controller and workers)** run the following command:
 ```
+sudo apt-get update
 sudo apt install slurm-wlm
 ```
 In the **controller node**:
