@@ -1,89 +1,161 @@
-# settig_up_cluster
-To setup the new computational cluster in the new S3IT ScienceCloud, I followed (this)[https://github.com/SergioMEV/slurm-for-dummies] github page and modified accordingly.
+# Setting Up a SLURM Cluster
 
-## Launch instances
-Following the S3IT recommendations to launch instances I had to launch one instance that will serve as a controller node and two (or more) that will be worker nodes. 
-## Set up private network
-Edit the '/etc/hosts' file of all nodes (controller and worker) and add the IPs and names of all the nodes in the cluster:
+To setup the new computational cluster in the new S3IT ScienceCloud, I followed [this](https://github.com/SergioMEV/slurm-for-dummies) GitHub page and modified accordingly.
+
+## Prerequisites
+
+Before starting, ensure you have:
+- SSH access between all nodes
+- Sudo privileges on all nodes
+- Network connectivity between controller and worker nodes
+- Ubuntu OS installed on all nodes
+
+## Launch Instances
+
+Following the S3IT recommendations, launch:
+- **One controller node** (acts as the cluster manager)
+- **Two or more worker nodes** (execute computational tasks)
+
+## Set Up Private Network
+
+**On all nodes** (controller and workers), edit the `/etc/hosts` file and add the IPs and names of all the nodes in the cluster:
+
 ```
 xxx.xx.xxx.xx1	frontend001
 xxx.xx.xxx.xx2	med32compute001
 xxx.xx.xxx.xx3	med32compute002
 ```
-## 1) Setyp SSH
+
+Replace the IPs with your actual network addresses.
+
+## 1) Setup SSH
+
 Run the following command on all nodes:
-```
+
+```bash
 sudo apt install openssh-server openssh-client
 ```
-Test if it works by running the following command:
+
+Test if it works by running the following command from the controller node:
+
+```bash
+ssh med32compute001  # Test connection to a worker node
 ```
-ssh med32compute001 #If you are in the frontend001 node
-```
-# 2) Install and setup Munge
-Install munge in **all nodes** running the following commands:
-```
+
+## 2) Install and Setup Munge
+
+Munge is a cryptographic authentication service used by SLURM to authenticate communication between nodes.
+
+### Install Munge on all nodes
+
+Run the following commands on **all nodes** (controller and workers):
+
+```bash
 sudo apt install munge libmunge2 libmunge-dev
+```
+
+Test the installation by verifying Munge authentication:
+
+```bash
 munge -n | unmunge | grep STATUS
 ```
-Then ensure that all munge files in the **controller node** have the correct permissions by:
-```
+
+This should return a `STATUS=Success` message.
+
+### Configure Munge permissions on controller node
+
+Ensure that all munge files in the **controller node** have the correct permissions:
+
+```bash
 sudo chown -R munge: /etc/munge/ /var/log/munge/ /var/lib/munge/ /run/munge/
 sudo chmod 0700 /etc/munge/ /var/log/munge/ /var/lib/munge/
 sudo chmod 0755 /run/munge/
 sudo chmod 0700 /etc/munge/munge.key
 sudo chown -R munge: /etc/munge/munge.key
 ```
-Then restart the munge service and configure it to run at startup. And test
-```
+
+### Enable and test Munge on controller node
+
+```bash
 sudo systemctl enable munge
 sudo systemctl restart munge
 sudo systemctl status munge
 ```
-It is necessary to have the exact same */etc/munge/munge.key* from the controller node in all the worker nodes. One way of doing it is to transfer the file from the *controller node* into each working node using rsync:
-```
+
+### Synchronize Munge key to worker nodes
+
+It is necessary to have the exact same `/etc/munge/munge.key` on all worker nodes. Copy the key from the **controller node** to each **worker node**:
+
+```bash
 sudo rsync -avz -e "ssh -i .ssh/id_rsa" /etc/munge/munge.key ubuntu@xxx.xx.xxx.xx2:
 sudo rsync -avz -e "ssh -i .ssh/id_rsa" /etc/munge/munge.key ubuntu@xxx.xx.xxx.xx3:
 ```
-In each node eliminate and replace the */etc/munge/munge.key* file running the following commands:
-```
+
+### Configure Munge on worker nodes
+
+On each **worker node**, replace the `/etc/munge/munge.key` file:
+
+```bash
 sudo rm /etc/munge/munge.key
 sudo mv munge.key /etc/munge
 
-#And ensure correct permissions
-
+# Ensure correct permissions
 sudo chown -R munge: /etc/munge/ /var/log/munge/ /var/lib/munge/ /run/munge/
 sudo chmod 0700 /etc/munge/ /var/log/munge/ /var/lib/munge/
 sudo chmod 0755 /run/munge/
 sudo chmod 0700 /etc/munge/munge.key
 sudo chown -R munge: /etc/munge/munge.key
 
-# Restart munge
+# Enable and restart Munge
 sudo systemctl enable munge
 sudo systemctl restart munge
 
-# Test munge
-munge -n | ssh frontend001 unmunge 
+# Test Munge authentication across nodes
+munge -n | ssh frontend001 unmunge
 ```
-# 3) Install and setup Slurm
-On **all nodes (controller and workers)** run the following command:
-```
+
+## 3) Install and Setup SLURM
+
+### Install SLURM on all nodes
+
+On **all nodes** (controller and workers), run:
+
+```bash
 sudo apt-get update
 sudo apt install slurm-wlm
 ```
-In the **controller node**:
-```
+
+### Enable SLURM controller daemon
+
+In the **controller node**, enable and start the SLURM controller:
+
+```bash
 sudo systemctl enable slurmctld
 sudo systemctl restart slurmctld
 sudo systemctl status slurmctld
 ```
-In all **worker nodes**:
-```
+
+### Enable SLURM compute daemons
+
+On all **worker nodes**, enable and start the SLURM compute daemons:
+
+```bash
 sudo systemctl enable slurmd
 sudo systemctl restart slurmd
 sudo systemctl status slurmd
 ```
-Modify the configuration file for slurm in the controller node (sudo nano /etc/slurm/slurm.conf) and the copy it in all worker nodes. Here is an example for version, but it may need to be adjusted accroding to all the worker nodes:
+
+### Configure SLURM
+
+On the **controller node**, edit the SLURM configuration file:
+
+```bash
+sudo nano /etc/slurm/slurm.conf
 ```
+
+Use the following example configuration as a template. Adjust the values according to your cluster specifications (node names, CPU counts, memory, etc.):
+
+```ini
 ############################
 # BASIC CLUSTER SETTINGS
 ############################
@@ -219,38 +291,103 @@ SlurmdLogFile=/var/log/slurm/slurmd.log
 
 DisableRootJobs=NO
 ```
-Copy the configuration file into all the worker nodes. I do this by using rsync:
-```
+
+### Copy SLURM configuration to worker nodes
+
+From the **controller node**, copy the SLURM configuration to all worker nodes using rsync:
+
+```bash
 sudo rsync -avz -e "ssh -i .ssh/id_rsa" /etc/slurm/slurm.conf ubuntu@xxx.xx.xxx.xx2:/etc/slurm
 sudo rsync -avz -e "ssh -i .ssh/id_rsa" /etc/slurm/slurm.conf ubuntu@xxx.xx.xxx.xx3:/etc/slurm
 ```
-Restart slurm on all working nodes:
-```
+
+### Restart SLURM on all worker nodes
+
+```bash
 sudo systemctl enable slurmd
 sudo systemctl restart slurmd
 sudo systemctl status slurmd
 ```
-# 4) Configure shared storage
-To create a shared file system (i.e. so thatt all nodes have the same folders) first we need to setup NFS. In the **controller node** install/update NFS:
-```
+
+## 4) Configure Shared Storage
+
+To create a shared file system so that all nodes have access to the same home directory, we need to set up NFS (Network File System).
+
+### Install and configure NFS server on controller node
+
+On the **controller node**, install NFS:
+
+```bash
 sudo apt install nfs-kernel-server
 ```
-Modidy the */etc/exports* file:
-```
+
+Edit the `/etc/exports` file:
+
+```bash
 sudo nano /etc/exports
+```
 
-# Add the following line
-/home 172.23.208.0/24(rw,sync,no_root_squash) #Modify this accordingly by creating a subnet of all IPs of the worker nodes
+Add the following line (modify the IP subnet to match your worker nodes' network):
 
-# Apply cahnges
+```
+/home 172.23.208.0/24(rw,sync,no_root_squash)
+```
+
+Apply the changes:
+
+```bash
 sudo exportfs -ra
 sudo systemctl restart nfs-kernel-server
 ```
-On all **worker nodes** run the following commands:
-```
-# Install NFS
+
+### Install NFS client and mount on worker nodes
+
+On all **worker nodes**, run the following commands:
+
+```bash
+# Install NFS client
 sudo apt install nfs-common
-# Mount the frontend into the node
+
+# Create mount point if it doesn't exist
+sudo mkdir -p /home
+
+# Mount the controller's home directory
 sudo mount primrose-frontend001:/home /home
 ```
 
+### Make NFS mount permanent
+
+To ensure the NFS mount persists after reboot, add the following line to `/etc/fstab` on each **worker node**:
+
+```bash
+sudo nano /etc/fstab
+```
+
+Add this line:
+
+```
+primrose-frontend001:/home /home nfs defaults 0 0
+```
+
+## Troubleshooting
+
+### Munge key synchronization issues
+- Ensure the `/etc/munge/munge.key` file has identical permissions (0700) on all nodes
+- Check that the munge service is running: `sudo systemctl status munge`
+- Test Munge authentication: `munge -n | unmunge | grep STATUS`
+
+### SSH connection failures
+- Verify SSH keys are properly configured for passwordless login
+- Check SSH service is running: `sudo systemctl status ssh`
+- Test connectivity: `ssh nodename` from the controller node
+
+### NFS mount issues
+- Check NFS server is running on controller: `sudo systemctl status nfs-kernel-server`
+- Verify firewall allows NFS traffic on port 2049
+- Test mount manually: `sudo mount -t nfs primrose-frontend001:/home /mnt/test`
+- Check mount status: `mount | grep nfs`
+
+### SLURM connectivity issues
+- Verify all nodes have synchronized clocks (use `ntpdate` or `chronyc`)
+- Check SLURM logs: `sudo tail -f /var/log/slurm/slurmctld.log`
+- Ensure Munge is working on all nodes before troubleshooting SLURM
