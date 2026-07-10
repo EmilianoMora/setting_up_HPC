@@ -330,7 +330,7 @@ sudo nano /etc/exports
 Add the following line (modify the IP subnet to match your worker nodes' network):
 
 ```
-/home 172.23.208.0/24(rw,sync,no_root_squash)
+/home 172.xx.xxx.x/xx(rw,sync,no_root_squash)
 ```
 
 Apply the changes:
