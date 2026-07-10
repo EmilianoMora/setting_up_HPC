@@ -10,7 +10,7 @@ The cluster described in this tutorial is a **static cluster**, where each worke
 
 Every new worker node must satisfy four basic requirements before Slurm can schedule jobs on it:
 
-1. It can communicate with the head node.
+1. It can communicate with the head NODE.
 2. It shares the same MUNGE authentication key.
 3. It uses the same Slurm configuration.
 4. It has access to the shared filesystem.
