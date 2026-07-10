@@ -1,6 +1,6 @@
 # Setting Up a SLURM Cluster
 
-To setup the new computational cluster in the new S3IT ScienceCloud, I followed [this](https://github.com/SergioMEV/slurm-for-dummies) GitHub page and modified accordingly.
+To setup the new computational cluster in the new [S3IT ScienceCloud](https://docs.s3it.uzh.ch/cloud/overview/), I followed [this](https://github.com/SergioMEV/slurm-for-dummies) GitHub page and modified accordingly.
 
 ## Prerequisites
 
