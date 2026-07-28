@@ -13,7 +13,7 @@ Once the instance is created one can access it via
 ```sh
 ssh ubuntu@assigned.ip.address
 ```
-Once one is in first run
+Once one is within the instance, run the following command.
 ```sh
 sudo apt-get update
 ```
@@ -34,17 +34,15 @@ And paste it in a new line within the *~/.ssh/authorized_keys* file and save.
 ```sh
 sudo nano ~/.ssh/authorized_keys
 ```
-
 2) Install necessary programs and dependencies
-
 ```sh
 sudo apt install build-essential libhwloc-dev libjson-c-dev libcurl4-openssl-dev libyaml-dev libsystemd-dev libdbus-1-dev pkg-config libmysqlclient-dev libssl-dev libpam0g-dev
 ```
-Install SSH
+3) Install SSH
 ```sh
 sudo apt install openssh-server openssh-client #Install SSH
 ```
-Install Munge
+4) Install Munge
 ```sh
 sudo apt install munge libmunge2 libmunge-dev #Install Munge
 
@@ -58,11 +56,11 @@ sudo chown -R munge: /etc/munge/munge.key
 # Check Munge status
 munge -n | unmunge | grep STATUS
 ```
-Install NFS
+5) Install NFS
 ```sh
 sudo apt install nfs-kernel-server nfs-common #Install NFS-client
 ```
-Install slurm v25.05.8. **NOTE**: for no reason install slurm from the Linux online repository (sudo apt install slurm-wlm). This will install slurm v23 that will then affect how v25 is installed.
+6) Install slurm v25.05.8. **NOTE**: for no reason install slurm from the Linux online repository (sudo apt install slurm-wlm). This will install slurm v23 that will then affect how v25 is installed.
 ```
 # Download the source (use the same version 23.11.4 to match your system)
 wget https://download.schedmd.com/slurm/slurm-25.05.8.tar.bz2
@@ -137,4 +135,11 @@ Create a slurm.conf file
 ```
 sudo nano /etc/slurm/slurm.conf
 ```
-Here, is a template for the most basic configuration file for slurm v25. Some aspects will need to be modified depending on the instances that will be added to the HPC. Specifically, the *NODES* and *PARTITIONS* sections.
+[Here](./slurm.conf), is a template for the most basic configuration file for slurm v25. Some aspects will need to be modified depending on the instances that will be added to the HPC. Specifically, the *NODES* and *PARTITIONS* sections.
+The information for the *NODES* section can be found for the **worker nodes** with the following commands.
+```sh
+lscpu | grep -E "CPU\(s\)|Socket|Core|Thread"
+
+# And
+free -h
+```
