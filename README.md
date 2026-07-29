@@ -218,10 +218,10 @@ And add the following. Make sure to change the subnet (172.23.0.0/16) accordingl
 Explanation:
 
 172.23.0.0/16 → allows your HPC private network
-* rw → workers can read/write
-* sync → safer writes
-* no_subtree_check → recommended for HPC
-* no_root_squash → root on workers remains root (common in HPC)
+* rw: workers can read/write
+* sync: safer writes
+* no_subtree_check: recommended for HPC
+* no_root_squash: root on workers remains root (common in HPC)
 
 ```sh
 sudo exportfs -ra #Reload exports
